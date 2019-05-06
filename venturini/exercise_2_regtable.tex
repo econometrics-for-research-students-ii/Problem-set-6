@@ -1,0 +1,31 @@
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{longtable}{l*{7}{c}}
+\hline\hline\endfirsthead\hline\endhead\hline\endfoot\endlastfoot
+          &\multicolumn{1}{c}{(1)}         &\multicolumn{1}{c}{(2)}         &\multicolumn{1}{c}{(3)}         &\multicolumn{1}{c}{(4)}         &\multicolumn{1}{c}{(5)}         &\multicolumn{1}{c}{(6)}         &\multicolumn{1}{c}{(7)}         \\
+\hline
+educrec   &   -0.027\sym{***}&   -0.026\sym{***}&   -0.025\sym{***}&   -0.073\sym{***}&   -0.070\sym{***}&   -0.068\sym{***}&   -0.049\sym{***}\\
+          &  [0.000]         &  [0.000]         &  [0.000]         &  [0.011]         &  [0.011]         &  [0.010]         &  [0.007]         \\
+[1em]
+married   &                  &   -0.092\sym{***}&   -0.093\sym{***}&                  &   -0.077\sym{***}&   -0.078\sym{***}&   -0.084\sym{***}\\
+          &                  &  [0.001]         &  [0.001]         &                  &  [0.004]         &  [0.004]         &  [0.003]         \\
+[1em]
+SMSA      &                  &    0.001         &    0.001         &                  &    0.012\sym{***}&    0.011\sym{***}&    0.006\sym{***}\\
+          &                  &  [0.001]         &  [0.001]         &                  &  [0.003]         &  [0.003]         &  [0.002]         \\
+[1em]
+\_cons    &    0.282\sym{***}&    0.355\sym{***}&    0.374\sym{***}&    0.596\sym{***}&    0.680\sym{***}&    0.662\sym{***}&    0.546\sym{***}\\
+          &  [0.002]         &  [0.002]         &  [0.003]         &  [0.077]         &  [0.077]         &  [0.069]         &  [0.048]         \\
+[1em]
+birth year dummies &       No         &       No         &      Yes         &       No         &      Yes         &      Yes         &      Yes         \\
+[1em]
+region dummies &       No         &      Yes         &      Yes         &       No         &      Yes         &      Yes         &      Yes         \\
+[1em]
+state dummies &       No         &       No         &       No         &       No         &       No         &       No         &      Yes         \\
+\hline
+\(N\)     &   446241         &   446241         &   446241         &   446241         &   446241         &   446241         &   446241         \\
+\hline\hline
+\multicolumn{8}{l}{\footnotesize Standard errors in brackets}\\
+\multicolumn{8}{l}{\footnotesize Notes: (1) to (3) are OLS, (4) to (7) are the second stage from a 2sls IV regression}\\
+\multicolumn{8}{l}{\footnotesize \sym{*} \(p<0.10\), \sym{**} \(p<0.05\), \sym{***} \(p<0.01\)}\\
+\end{longtable}
+}
