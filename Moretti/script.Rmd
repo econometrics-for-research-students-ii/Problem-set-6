@@ -283,7 +283,7 @@ inst.4 <- ivreg(disab_dummy~educrec+SMSA_dummy+married_dummy+as.factor(region)+a
 ```
 
 ```{r slsd, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
-stargazer(linear.1,linear.2,linear.3,inst.1,inst.2,type="html",keep=c("educrec"))
+stargazer(linear.1,linear.2,linear.3,inst.1,inst.2,inst.3,inst.4,type="html",keep=c("educrec"))
 
 
 ```
@@ -304,7 +304,7 @@ test1 <- lm(educrec~birthqtr+SMSA_dummy+married_dummy+as.factor(region)+as.facto
 test2 <- lm(educrec~birthqtr*as.factor(birthyear)+SMSA_dummy+married_dummy+as.factor(region)+as.factor(birthyear),ak91_restricted)
 test3 <- lm(educrec~ birthqtr*as.factor(region)+SMSA_dummy+married_dummy+as.factor(region)+as.factor(birthyear)+as.factor(region),ak91_restricted)
 
-stargazer(test, test1,test2, test3, type="text", keep=c("birthqtr"))
+stargazer(test, test1, type="text", keep=c("birthqtr"))
 ```
 l.
 
