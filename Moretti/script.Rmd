@@ -1,0 +1,318 @@
+---
+title: "Problem Set 6"
+author: "Luca Moretti"
+date: "1 Mai 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+```
+
+
+## 6.1 Application: Matching vs. regression
+
+```{r loaddata, echo=FALSE, message=FALSE, warning=FALSE}
+library("readxl")
+library(tidyverse)
+berkeley <- read_excel("berkeley.xls", col_names = TRUE)
+berkeley <- berkeley %>%
+  rename(
+    major  = A,
+    gender = B,
+    admit  = C,
+    deny   = D,
+    total  = E,
+    pctadmitted = F
+  )
+berkeley$men_dummy = ifelse(berkeley$gender=='Men',1,0)
+berkeley <- berkeley[complete.cases(berkeley),]
+```
+a) Can be considered a Treatment. In my opinion everything can be called a treatment and one can analyse it's effect. However, one has to aware of the fact that sex is a treament that is rather difficult to apply.
+
+b) 
+```{r b, echo=FALSE}
+lm(pctadmitted~men_dummy, data=berkeley,,total)
+berkeley <- berkeley%>%
+  group_by(men_dummy) 
+
+conditional_mean <- berkeley %>%
+  summarise(
+    #pct = mean(pctadmitted),
+    wpct = weighted.mean(pctadmitted,total)
+  )
+berkeley %>%
+  summarise(
+    #pct = mean(pctadmitted),
+    wpct = weighted.mean(pctadmitted,total)
+  )
+
+```
+The ATE of beeing male therfore is:
+```{r bATT, echo=FALSE}
+conditional_mean$wpct[1]-conditional_mean$wpct[2]
+
+```
+C)
+It's a very strong strong assumption, however in the case of sex on might be able to make the argument (since it's (to the best of my knowledge, even though there are correlational studies that show jet pilots have more girls) random at least before prenatale technology, see for example Benn. 2013 "Prenatal technologies and the sex ratio").
+Still it's hard imagine the counterfactual outcome: If a women were born a man (and led his whole life up to this point as a men), what would have been the acceptance rate?
+
+d) 
+
+```{r sdaf, echo=FALSE}
+conditional_mean_m <- berkeley %>%
+  subset(gender=="Men") %>%
+  group_by(major)%>%
+  summarise(
+    mean(pctadmitted)
+  )
+conditional_mean_f <- berkeley %>%
+  subset(gender=="Women") %>%
+  group_by(major)%>%
+  summarise(
+    mean(pctadmitted)
+  )
+total_major <- berkeley %>%
+  group_by(major) %>%
+  summarise(
+    total = sum(total)
+  )
+women_major <- berkeley %>%
+  subset(gender=="Women")%>%
+  group_by(major) %>%
+  summarise(
+    total = sum(total)
+  )
+men_major <- berkeley %>%
+  subset(gender=="Men")%>%
+  group_by(major) %>%
+  summarise(
+    total = sum(total)
+  )
+result <- data.frame(conditional_mean_f$major)
+result$mean_difference <- conditional_mean_m$`mean(pctadmitted)`-conditional_mean_f$`mean(pctadmitted)`
+
+```
+The ATE is: 
+```{r sdafd, echo=FALSE}
+#ate
+sum(result$mean_difference *(total_major$total/sum(total_major$total)))
+
+```
+The ATT
+```{r sdaff, echo=FALSE}
+#ATT
+sum(result$mean_difference *(men_major$total/sum(men_major$total)))
+
+```
+
+
+e) They answer different question. In a) we answer the causal impact of gender on acceptance. There are many channels through which gender can have an effect, one of which is the choice of major. In d) we shut this channel off. We answer no question here exept if we are willing to assume that all factors through which gender affects acceptance are mediated through the choice of major. Then we would have one of thoses CV studies. This doesn't seem reasonable (women could be less likely to apply given the same qualification, if this relative overqualification is not fully captured by the choice of major, we have a problem).
+
+f)
+```{r sddaf, echo=FALSE}
+
+bl<-lm(pctadmitted~men_dummy+as.factor(major), data=berkeley,,total)
+
+
+```
+
+```{r adfgadg, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+library(stargazer)
+stargazer(bl,type="html")
+
+```
+
+g)
+"While the matching estimator combines covariate-valuespecific estimates to produces an estimate of the effect of treatment on the treated,
+regression produces a variance-weighted average of these effects."
+
+
+##  6.2 Application: Instrumental variables
+a) 
+- linearity
+- random sampling
+- variation in x
+- $ E[\mu |x]=0 $
+- $ cov(Educ,\mu)=0 $
+```{r dag1, echo=FALSE, message=FALSE, warning=FALSE}
+library(ggdag)
+my_dag <- dagify(Y~educ+x+z+mu,
+       educ~z+v,
+       educ~Y+x,
+       x~~z,
+       labels = c("Y"="Health",
+                  "educ" = "Education",
+                  "z" = "Parental educaiton",
+                  "x" = "Controls"),
+       latent = "z",
+       exposure = "educ",
+       outcome = "Y") 
+ ggdag(my_dag,text = TRUE, use_labels = "label")
+ # ggdag_paths(my_dag, text = FALSE, use_labels = "label")
+```
+
+There are so many reasons why this assumption could fail. 
+Simultaneity (Health can affect education as well) and omitted variable bias (e.g. Parents education, parental income,etc.).
+  
+
+b) Yes.
+  
+  
+```{r dag2, echo=FALSE, message=FALSE, warning=FALSE}
+library(ggdag)
+my_dag <- dagify(Y~educ+x+z+mu,
+       educ~z+v,
+       educ~Y+x+iv,
+       x~~z,
+       iv~x,
+       labels = c("Y"="Health",
+                  "educ" = "Education",
+                  "z" = "Parental educaiton",
+                  "x" = "Controls",
+                  "iv" = "Instrument"),
+       latent = "z",
+       exposure = "educ",
+       outcome = "Y") 
+ ggdag(my_dag,text = TRUE, use_labels = "label")
+ # ggdag_paths(my_dag, text = FALSE, use_labels = "label")
+```
+
+
+c)
+- SUTVA
+  The education of one individual doesn't affect the others.
+- Exogeneity
+  E[IV*v]=0
+  The instrument is orthogonal to the first stage error term.
+- Relevance
+  E[educ|iv=1]-E[educ|iv=0]>0
+  Quarter of birth correlates with education.
+- Exclusion Restriction
+  E[healt|iv,educ]
+  Quarter of birth doesn't affect health through other factors than education.
+- Monotonicity
+  $D_{1,i} > D_{0,i}, \forall i $
+  There is nobody that if born later would get more education and if born earlier would get less.
+  
+  
+d)
+Treatment: Beeing born earlier in the year -> more education  (Wait it's the other way around but you get the picture)
+
+- Compliers
+  The ones that get more education if born in an eralier quarter and get less education if born in a later quarter. Therefore those are the ones dropping out as soon as they can.
+- Nevertaker
+  The ones that never get more education. The ones that drop out and are exempt of the law (see examples in paper)
+- Alwaystaker
+  No matter in which quarter they are born, they always take the same amount of education. The ones that are not constraint by the law.
+- Defiers
+  if born later would get more education and if born earlier would get less.
+  we assumed them away
+  
+e)
+BJ96 provide evidence, that the exclusion restriction does not hold.
+BJ95 find biases along the line of what's described in k.
+
+
+f)
+We would exploit the variation between states. 
+- There is no selection into treatment. States with different schooling laws are the same in all aspects that we don't control for (condtional independence). 
+- the exclusion restriction is harder to argue for. What if more progressive states have stricter schooling laws but also stricter pollution laws that reflect in a healthier population.  
+
+g)
+Knwoledge of Nutrition, etc -> health
+
+different jobs -> desk jobs
+               -> Higher salary -> can afford better nutrion
+                                -> more doctor visits
+                                -> living in better environment
+
+
+h)
+```{r h, echo=FALSE}
+library(foreign)
+library(labelled)
+library(stargazer)
+
+ak91 <- read.dta("datarest.dta",convert.factors = FALSE)
+
+ak91$disab_dummy   <- ifelse(ak91$disabtrn==2 |
+                           ak91$disabwrk==2 |
+                           ak91$disabwrk==3
+                           ,1,0)
+ak91$SMSA_dummy    <- ifelse(ak91$metro==2,1,0)
+
+ak91$married_dummy <- ifelse(ak91$marst==1,1,0)
+
+ak91_restricted <- ak91 %>%
+  subset(sex==1 & birthyear>=1930 & birthyear<=1939 & educrec>0 & bpl<90)
+
+linear.1 <- lm(disab_dummy~educrec, data=ak91_restricted)
+linear.2 <- lm(disab_dummy~educrec+SMSA_dummy+married_dummy+as.factor(region), data=ak91_restricted)
+linear.3 <- lm(disab_dummy~educrec+SMSA_dummy+married_dummy+as.factor(birthyear), data=ak91_restricted)
+```
+
+
+```{r hff, message=FALSE, warning=FALSE, results='asis'}
+
+stargazer(linear.1,linear.2,linear.3,type="html")
+
+
+```
+
+i)
+$$
+  health = \delta_0 + \delta_1*educ + \delta_2*income + \delta_3*married + \delta_4*sex + \delta_5*age + u
+  $$
+  $$
+  educ =  \beta_1*birthqrt + \beta_2*income + \beta_3*married + \beta_4*sex + \beta_5*age + u
+$$
+
+j)
+```{r sls, echo=FALSE, message=FALSE, warning=FALSE}
+library(AER)
+inst.1 <- ivreg(disab_dummy~educrec | birthqtr, ,ak91_restricted)
+inst.2 <- ivreg(disab_dummy~educrec+SMSA_dummy+married_dummy+as.factor(region)+as.factor(birthyear) | 
+                            birthqtr+SMSA_dummy+married_dummy+as.factor(region)+as.factor(birthyear), ,ak91_restricted)
+inst.3 <- ivreg(disab_dummy~educrec+SMSA_dummy+married_dummy+as.factor(region)+as.factor(birthyear) | 
+                            birthqtr*as.factor(birthyear)+SMSA_dummy+married_dummy+as.factor(region)+as.factor(birthyear), ,ak91_restricted)
+inst.4 <- ivreg(disab_dummy~educrec+SMSA_dummy+married_dummy+as.factor(region)+as.factor(birthyear) +as.factor(region)| 
+                            birthqtr*as.factor(region)+SMSA_dummy+married_dummy+as.factor(region)+as.factor(birthyear)+as.factor(region), ,ak91_restricted)
+```
+
+```{r slsd, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+stargazer(linear.1,linear.2,linear.3,inst.1,inst.2,type="html",keep=c("educrec"))
+
+
+```
+
+k.
+$$
+ plim \Delta = \frac{cov(Y,Z)}{cov(D,Z)}=\frac{cov(\Delta D + u ,Z)}{cov(D,Z)} = \Delta + \frac{cov(u,Z)}{cov(D,Z)}
+$$
+
+$cov(u,Z)$ is not zero in small samples
+$cov(D,Z)$ is the strength of the first stage
+
+
+First stage
+```{r slcxs, echo=FALSE, message=FALSE, warning=FALSE}
+test <- lm(educrec ~ birthqtr,ak91_restricted)
+test1 <- lm(educrec~birthqtr+SMSA_dummy+married_dummy+as.factor(region)+as.factor(birthyear),ak91_restricted)
+test2 <- lm(educrec~birthqtr*as.factor(birthyear)+SMSA_dummy+married_dummy+as.factor(region)+as.factor(birthyear),ak91_restricted)
+test3 <- lm(educrec~ birthqtr*as.factor(region)+SMSA_dummy+married_dummy+as.factor(region)+as.factor(birthyear)+as.factor(region),ak91_restricted)
+
+stargazer(test, test1,test2, test3, type="text", keep=c("birthqtr"))
+```
+l.
+
+m.
+It's the treatmenteffect on the compliers.
+
+n.
+Unclear :)
+The exogneity of the instrument can apparently be disputed.
+
+
